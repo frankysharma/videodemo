@@ -1,8 +1,10 @@
 package com.rahul.shrofiledemo;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
@@ -11,6 +13,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -33,6 +36,8 @@ import com.rahul.shrofiledemo.utils.Utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
@@ -84,6 +89,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         super.onResume();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
+            int hasCameraPermission = checkSelfPermission(Manifest.permission.CAMERA);
+
+            List<String> permissions = new ArrayList<String>();
+
+            if (hasCameraPermission != PackageManager.PERMISSION_GRANTED) {
+                permissions.add(Manifest.permission.CAMERA);
+
+            } else {
+                initCamera();
+            }
+            if (!permissions.isEmpty()) {
+                requestPermissions(permissions.toArray(new String[permissions.size()]), 111);
+            }
+        } else {
+            initCamera();
+        }
+    }
+
+    private void initCamera() {
         if (camera != null){
             //camera.stopPreview();
             camera.release();
@@ -97,6 +123,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 setCameraDisplayOrientation(MainActivity.this,
                         Camera.CameraInfo.CAMERA_FACING_BACK, camera);
             preview.setCamera(camera);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case 111: {
+                for (int i = 0; i < permissions.length; i++) {
+                    if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                        System.out.println("Permissions --> " + "Permission Granted: " + permissions[i]);
+                        initCamera();
+                    } else if (grantResults[i] == PackageManager.PERMISSION_DENIED) {
+                        System.out.println("Permissions --> " + "Permission Denied: " + permissions[i]);
+                        Utils.toast(context,"Camera permission not granted");
+                    }
+                }
+            }
+            break;
+            default: {
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            }
         }
     }
 
